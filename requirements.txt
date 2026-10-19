@@ -1,0 +1,3 @@
+# [default] adds yt-dlp-ejs, needed to solve YouTube's JS challenges (with Deno installed)
+yt-dlp[default]
+tomli; python_version < "3.11"
