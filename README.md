@@ -110,6 +110,7 @@ schedule = "hourly"
 timeout  = "55m"
 caddy    = """
 podcasts.example.com {
+    encode zstd gzip   # compresses feeds; audio and images are left as is
     root * {{data}}/podcasts
     file_server
 }
