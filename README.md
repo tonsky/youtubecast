@@ -8,16 +8,13 @@ a static webserver at the `root` folder and subscribe to
 
 ## Requirements
 
-Python 3.11+ (older ones get the `tomli` backport from `requirements.txt`),
-ffmpeg, and [Deno](https://deno.com): yt-dlp needs a JavaScript runtime for
-full YouTube support and only uses Deno by default, see
-[EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
-
-```sh
-sudo apt install python3-venv ffmpeg   # + Deno, e.g. from its GitHub releases
-python3 -m venv venv
-venv/bin/pip install -r requirements.txt
-```
+- [uv](https://docs.astral.sh/uv/): dependencies are declared inline in
+  `youtubecast.py` (PEP 723), `uv run --script` creates and caches the
+  environment. Uses Python 3.11+ if installed, downloads one otherwise
+- ffmpeg
+- [Deno](https://deno.com): yt-dlp needs a JavaScript runtime for full YouTube
+  support and only uses Deno by default, see
+  [EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS)
 
 ## Configuration
 
@@ -69,9 +66,6 @@ Optional, global or per-podcast (per-podcast wins):
 ```
 youtubecast/
 ├── youtubecast.py
-├── run.sh              # upgrades yt-dlp, then runs youtubecast.py
-├── requirements.txt
-├── venv/
 │                       # data dir, the same folder unless $DATA_DIR is set:
 ├── config.toml
 ├── youtubecast.lock    # prevents overlapping runs
@@ -94,8 +88,14 @@ not last check — a failed download retries on the next run. Delete an ID from
 
 ## Running
 
-`run.sh` upgrades yt-dlp in the venv (YouTube breaks old versions often), then
-checks all sources. It exits non-zero if any source failed.
+```sh
+uv run --script --upgrade-package yt-dlp youtubecast.py
+```
+
+`--upgrade-package yt-dlp` updates yt-dlp in the cached environment on every
+run (YouTube breaks old versions often); without it uv keeps whatever version
+it installed first. Costs under a second when there's nothing new. Exits
+non-zero if any source failed.
 
 ### Houston
 
@@ -105,8 +105,7 @@ data dir. Put `config.toml` into `~/youtubecast/data/`.
 ```toml
 [services.youtubecast]
 repo     = "https://github.com/tonsky/youtubecast"
-build    = "python3 -m venv venv && venv/bin/pip install -r requirements.txt"
-task     = "./run.sh"
+task     = "uv run --script --upgrade-package yt-dlp youtubecast.py"
 schedule = "hourly"
 timeout  = "55m"
 caddy    = """
@@ -123,5 +122,5 @@ podcasts.example.com {
 
 ```cron
 # check sources hourly
-0 * * * *  /path/to/youtubecast/run.sh >> /path/to/youtubecast/cron.log 2>&1
+0 * * * *  cd /path/to/youtubecast && uv run --script --upgrade-package yt-dlp youtubecast.py >> cron.log 2>&1
 ```
