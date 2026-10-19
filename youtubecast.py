@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["yt-dlp[default]"]  # [default] adds yt-dlp-ejs for YouTube's JS challenges
+# ///
 """Turn YouTube channels/playlists into audio podcast feeds.
 
 Reads config.toml from $DATA_DIR (default: next to the script), checks each
@@ -13,12 +17,8 @@ import json
 import os
 import re
 import sys
+import tomllib
 import xml.etree.ElementTree as ET
-
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # Python < 3.11
 from datetime import datetime, timezone
 from pathlib import Path
 
