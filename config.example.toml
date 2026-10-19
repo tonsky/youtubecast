@@ -1,5 +1,5 @@
 base_url = "https://podcasts.example.com/"
-root     = "/home/youtubecast/podcasts"
+# root   = "podcasts"   # relative to the data dir ($DATA_DIR or next to the script)
 backlog  = 1
 
 [[podcasts]]

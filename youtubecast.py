@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Turn YouTube channels/playlists into audio podcast feeds.
 
-Reads config.toml, checks each source for videos not yet downloaded,
-downloads audio + thumbnail with yt-dlp, and regenerates channel.xml
-(podcast RSS) in each podcast's folder. Designed to run from cron.
+Reads config.toml from $DATA_DIR (default: next to the script), checks each
+source for videos not yet downloaded, downloads audio + thumbnail with yt-dlp,
+and regenerates channel.xml (podcast RSS) in each podcast's folder. Designed to
+run on a schedule (cron, systemd timer, Houston task).
 """
 
 import email.utils
 import fcntl
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -23,6 +25,8 @@ from pathlib import Path
 import yt_dlp
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+# config.toml, lock file and (by default) podcasts/ live here
+DATA_DIR = Path(os.environ.get("DATA_DIR") or SCRIPT_DIR)
 
 ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
 ATOM_NS = "http://www.w3.org/2005/Atom"
@@ -187,7 +191,7 @@ def write_feed(folder, podcast, base_url, episodes):
 
 
 def process_podcast(podcast, config):
-    folder = Path(config["root"]) / podcast["folder"]
+    folder = DATA_DIR / config.get("root", "podcasts") / podcast["folder"]  # absolute root wins
     folder.mkdir(parents=True, exist_ok=True)
     backlog = podcast.get("backlog", config.get("backlog", 1))
 
@@ -235,14 +239,14 @@ def process_podcast(podcast, config):
 
 
 def main():
-    lock = open(SCRIPT_DIR / "youtubecast.lock", "w")
+    lock = open(DATA_DIR / "youtubecast.lock", "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         log("another instance is running, exiting")
         return 0
 
-    with open(SCRIPT_DIR / "config.toml", "rb") as f:
+    with open(DATA_DIR / "config.toml", "rb") as f:
         config = tomllib.load(f)
 
     failures = 0
